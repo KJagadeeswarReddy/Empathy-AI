@@ -6,13 +6,13 @@ import { getAuth, type Auth } from 'firebase/auth';
 
 // TODO: Replace with your actual Firebase project configuration
 const firebaseConfig = {
-  apiKey: "YOUR_API_KEY",
-  authDomain: "YOUR_AUTH_DOMAIN",
-  projectId: "YOUR_PROJECT_ID",
-  storageBucket: "YOUR_STORAGE_BUCKET",
-  messagingSenderId: "YOUR_MESSAGING_SENDER_ID",
-  appId: "YOUR_APP_ID",
-  measurementId: "YOUR_MEASUREMENT_ID" // Optional
+  apiKey: "AlzaSyCF5nYszi-2lq7j_yBcQ4faHFzLm1K-blg",
+  authDomain: "YOUR_AUTH_DOMAIN", // Needs to be filled after web app registration
+  projectId: "empathyai-wx82w",
+  storageBucket: "YOUR_STORAGE_BUCKET", // Needs to be filled after web app registration
+  messagingSenderId: "YOUR_MESSAGING_SENDER_ID", // Needs to be filled after web app registration
+  appId: "YOUR_APP_ID", // Needs to be filled after web app registration
+  measurementId: "YOUR_MEASUREMENT_ID" // Optional, get this if available after web app registration
 };
 
 let app: FirebaseApp;
