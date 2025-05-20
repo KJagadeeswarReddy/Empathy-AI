@@ -10,21 +10,21 @@ import { useAuth } from '@/hooks/use-auth';
 import { LoadingSpinner } from '@/components/ui/loading-spinner';
 import { generateFirstMessage } from '@/ai/flows/generate-first-message';
 import { useToast } from '@/hooks/use-toast';
-// import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'; // Card components removed
-// import { Avatar, AvatarFallback } from '@/components/ui/avatar'; // Avatar components removed
-import { Bot, MessageCircleHeart } from 'lucide-react'; // Bot for placeholder
+import { Bot, MessageCircleHeart } from 'lucide-react'; 
+import { Avatar, AvatarFallback } from '@/components/ui/avatar';
+
 
 interface ChatViewProps {
   activeChatId: string | null;
-  onStartNewChat: () => void; // This prop is passed to MessageInput
+  onStartNewChat: () => void; 
 }
 
 export function ChatView({ activeChatId, onStartNewChat }: ChatViewProps) {
   const [conversationHistory, setConversationHistory] = useState<Message[]>([]);
-  const [isLoading, setIsLoading] = useState(false); // For AI responses
+  const [isLoading, setIsLoading] = useState(false); 
   const [isFetchingInitialMessage, setIsFetchingInitialMessage] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [showJustifications, setShowJustifications] = useState(false); // Default to false based on prev. simplification
+  const [showJustifications, setShowJustifications] = useState(true); 
   const { user } = useAuth();
   const scrollAreaRef = useRef<HTMLDivElement>(null);
   const { toast } = useToast();
@@ -40,27 +40,27 @@ export function ChatView({ activeChatId, onStartNewChat }: ChatViewProps) {
   }, [conversationHistory]);
 
   useEffect(() => {
-    if (initialLoadAttemptedForChat.current === (activeChatId || 'new')) {
-      // If we've already attempted to load for this specific chat ID (or new chat state), don't re-fetch.
-      // This helps prevent double loads caused by StrictMode or rapid state changes.
+    const currentChatContext = activeChatId || 'new';
+    if (initialLoadAttemptedForChat.current === currentChatContext && conversationHistory.length > 0) {
       return;
     }
     
     setConversationHistory([]); 
     setError(null);
-    initialLoadAttemptedForChat.current = activeChatId || 'new';
+    initialLoadAttemptedForChat.current = currentChatContext;
 
     if (activeChatId === null) { 
       setIsFetchingInitialMessage(true);
       generateFirstMessage({ userPrompt: "User has started a new chat." })
         .then(aiWelcomeResponse => {
-          if (initialLoadAttemptedForChat.current === 'new') { // Ensure this is still the active context
+          if (initialLoadAttemptedForChat.current === 'new') { 
             setConversationHistory([
               {
                 id: `ai-new-${Date.now()}`,
                 role: 'assistant',
                 content: aiWelcomeResponse.welcomeMessage,
                 timestamp: new Date(),
+                justification: "Initial greeting message."
               },
             ]);
           }
@@ -75,6 +75,7 @@ export function ChatView({ activeChatId, onStartNewChat }: ChatViewProps) {
                 role: 'assistant',
                 content: "Hello! I'm Empathy.AI. How can I help you today?",
                 timestamp: new Date(),
+                justification: "Fallback initial greeting."
               },
             ]);
           }
@@ -86,17 +87,19 @@ export function ChatView({ activeChatId, onStartNewChat }: ChatViewProps) {
         });
     } else {
       setIsFetchingInitialMessage(false); 
-      // Placeholder for loading existing chat. For now, it clears and shows an empty state or a message.
+      // Placeholder: In a real app, load history for activeChatId
+      // For now, we'll just clear or show a specific message for existing chats
       setConversationHistory([
         // {
         //   id: `ai-loaded-${Date.now()}`,
         //   role: 'assistant',
         //   content: `Viewing chat: ${activeChatId}. History would load here.`,
         //   timestamp: new Date(),
+        //   justification: "Placeholder for loaded chat."
         // },
       ]);
     }
-  }, [activeChatId, user, toast]);
+  }, [activeChatId, user, toast, conversationHistory.length]); // Added conversationHistory.length to help manage re-runs
 
 
   const handleSendMessage = async (userInput: string) => {
@@ -121,7 +124,7 @@ export function ChatView({ activeChatId, onStartNewChat }: ChatViewProps) {
       const aiResponse: Message = {
         id: `ai-${Date.now()}`,
         role: 'assistant',
-        content: `Simulated empathetic response to: "${userInput}". Chat: ${activeChatId || 'New Chat'}`,
+        content: `Simulated empathetic response to: "${userInput}". Chat ID: ${activeChatId || 'New Chat'}`,
         justification: "This response is generated to demonstrate the chat flow and empathy.",
         timestamp: new Date(),
       };
@@ -187,7 +190,7 @@ export function ChatView({ activeChatId, onStartNewChat }: ChatViewProps) {
   return (
     <div className="flex h-[calc(100vh-8rem)] flex-col bg-background">
       <ScrollArea className="flex-1 p-4" ref={scrollAreaRef}>
-        <div className="container mx-auto max-w-3xl space-y-1"> {/* Reduced space-y for tighter message packing */}
+        <div className="container mx-auto max-w-3xl space-y-1"> 
           {conversationHistory.length === 0 && !isLoading && !isFetchingInitialMessage && (
             <div className="mt-8 text-center py-10">
               <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-primary/10 text-primary">
@@ -208,12 +211,10 @@ export function ChatView({ activeChatId, onStartNewChat }: ChatViewProps) {
             <ChatMessage key={msg.id} message={msg} showJustifications={showJustifications} />
           ))}
           {isLoading && conversationHistory.length > 0 && conversationHistory[conversationHistory.length -1].role === 'user' && (
-            <div className="flex items-start space-x-3 py-3 justify-start">
-              {/* Avatar removed for AI thinking, consistent with message styling */}
-              <div className="max-w-xs md:max-w-md lg:max-w-lg">
-                <div className="p-3 rounded-2xl rounded-bl-none bg-muted text-muted-foreground">
+            <div className="flex items-end space-x-3 py-2 justify-start">
+              {/* Avatar removed for consistency */}
+              <div className={("max-w-xs md:max-w-md lg:max-w-lg p-3 rounded-2xl text-sm break-words bg-muted text-muted-foreground rounded-bl-none")}>
                   <LoadingSpinner size="sm" /> <span className="ml-2 text-sm">AI is thinking...</span>
-                </div>
               </div>
             </div>
           )}
@@ -221,12 +222,9 @@ export function ChatView({ activeChatId, onStartNewChat }: ChatViewProps) {
       </ScrollArea>
       <MessageInput 
         onSendMessage={handleSendMessage} 
-        // onStartNewChat prop is available if MessageInput needs it, but icons were removed for simplicity
         isLoading={isLoading || isFetchingInitialMessage}
-        // showJustifications={showJustifications} // Icon was removed
-        // onToggleShowJustifications={toggleShowJustifications} // Icon was removed
       />
-      <footer className="py-3 text-center text-xs text-muted-foreground border-t bg-background">
+      <footer className="py-3 text-center text-xs text-muted-foreground border-t bg-background max-w-3xl mx-auto w-full">
         Empathy.AI can make mistakes. Consider checking important information.
       </footer>
     </div>
