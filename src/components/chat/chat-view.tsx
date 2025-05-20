@@ -14,17 +14,21 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { Bot, MessageCircleHeart } from 'lucide-react';
 
-// const API_ENDPOINT = '/api/v1/chat/send'; // Placeholder for your backend API - not used currently
+interface ChatViewProps {
+  activeChatId: string | null;
+  onStartNewChat: () => void;
+}
 
-export function ChatView() {
+export function ChatView({ activeChatId, onStartNewChat }: ChatViewProps) {
   const [conversationHistory, setConversationHistory] = useState<Message[]>([]);
-  const [isLoading, setIsLoading] = useState(false);
+  const [isLoading, setIsLoading] = useState(false); // For AI responses
+  const [isFetchingInitialMessage, setIsFetchingInitialMessage] = useState(false); // For the very first message
   const [error, setError] = useState<string | null>(null);
   const [showJustifications, setShowJustifications] = useState(true);
   const { user } = useAuth();
   const scrollAreaRef = useRef<HTMLDivElement>(null);
   const { toast } = useToast();
-  const initialLoadAttempted = useRef(false); // Tracks if initial message fetch has been attempted
+  const initialLoadAttemptedForChat = useRef<string | null | 'new'>(null);
 
   // Scroll to bottom when new messages are added
   useEffect(() => {
@@ -36,47 +40,55 @@ export function ChatView() {
     }
   }, [conversationHistory]);
 
-  // Generate initial AI message if conversation is empty
+  // Effect for handling activeChatId changes (new chat or loading existing)
   useEffect(() => {
-    const initChat = async () => {
-      // Only fetch if user exists, history is empty, and we haven't tried fetching yet.
-      if (user && conversationHistory.length === 0 && !initialLoadAttempted.current) {
-        initialLoadAttempted.current = true; // Mark as attempted immediately
-        setIsLoading(true);
-        try {
-          const firstMessageInput = { userPrompt: "User has just opened a new chat." };
-          const aiWelcomeResponse = await generateFirstMessage(firstMessageInput);
-          
-          setConversationHistory([ // Set directly, as we've confirmed history is empty
+    setConversationHistory([]); // Clear current messages when chat ID changes
+    setError(null);
+    initialLoadAttemptedForChat.current = activeChatId || 'new';
+
+    if (activeChatId === null) { // New chat
+      setIsFetchingInitialMessage(true);
+      generateFirstMessage({ userPrompt: "User has started a new chat." })
+        .then(aiWelcomeResponse => {
+          setConversationHistory([
             {
-              id: `ai-${Date.now()}`,
+              id: `ai-new-${Date.now()}`,
               role: 'assistant',
               content: aiWelcomeResponse.welcomeMessage,
               timestamp: new Date(),
             },
           ]);
-        } catch (err) {
-          console.error("Failed to generate first message:", err);
-          toast({
-            title: "Error",
-            description: "Could not start conversation with AI.",
-            variant: "destructive",
-          });
-           setConversationHistory([ // Fallback message, set directly
+        })
+        .catch(err => {
+          console.error("Failed to generate first message for new chat:", err);
+          toast({ title: "Error", description: "Could not start new conversation.", variant: "destructive" });
+          setConversationHistory([
             {
-              id: `ai-fallback-${Date.now()}`,
+              id: `ai-fallback-new-${Date.now()}`,
               role: 'assistant',
               content: "Hello! I'm Empathy.AI. How can I help you today?",
               timestamp: new Date(),
             },
           ]);
-        } finally {
-          setIsLoading(false);
-        }
-      }
-    };
-    initChat();
-  }, [user, conversationHistory, toast, setIsLoading, setConversationHistory]); // Added all relevant dependencies
+        })
+        .finally(() => {
+          setIsFetchingInitialMessage(false);
+        });
+    } else {
+      // Placeholder for loading existing chat history for activeChatId
+      // For now, it will remain empty. In a real app, fetch from Firestore.
+      setIsFetchingInitialMessage(false); // Not fetching a "new" first message here
+       setConversationHistory([
+        // {
+        //   id: `ai-loaded-${Date.now()}`,
+        //   role: 'assistant',
+        //   content: `You are now viewing chat: ${activeChatId}. History would load here.`,
+        //   timestamp: new Date(),
+        // },
+       ]);
+    }
+  }, [activeChatId, user, toast]);
+
 
   const handleSendMessage = async (userInput: string) => {
     if (!user) {
@@ -95,13 +107,19 @@ export function ChatView() {
     setIsLoading(true);
     setError(null);
 
+    // In a real app:
+    // 1. If activeChatId is null, create a new chat session in Firestore, get its ID, setActiveChatId.
+    // 2. Save userMessage to Firestore under activeChatId.
+    // 3. Call your AI flow.
+    // 4. Save AI response to Firestore.
+
     try {
       // Simulate API call delay
       await new Promise(resolve => setTimeout(resolve, 1500)); 
       const aiResponse: Message = {
         id: `ai-${Date.now()}`,
         role: 'assistant',
-        content: `This is a simulated response to: "${userInput}". I am designed to be empathetic.`,
+        content: `This is a simulated response to: "${userInput}". I am designed to be empathetic. Current chat: ${activeChatId || 'New Chat'}`,
         justification: "This response is generated to demonstrate the chat flow.",
         timestamp: new Date(),
       };
@@ -127,46 +145,14 @@ export function ChatView() {
     }
   };
 
-  const handleClearConversation = async () => {
-    setIsLoading(true); // Indicate loading for the new "first" message after clear
-    try {
-      const firstMessageInput = { userPrompt: "User has cleared the conversation and started fresh." };
-      const aiWelcomeResponse = await generateFirstMessage(firstMessageInput);
-      setConversationHistory([ // Replace entire history
-        {
-          id: `ai-cleared-${Date.now()}`,
-          role: 'assistant',
-          content: aiWelcomeResponse.welcomeMessage,
-          timestamp: new Date(),
-        },
-      ]);
-       toast({
-        title: "Conversation Cleared",
-        description: "A new chat has started.",
-      });
-    } catch (err) {
-      console.error("Failed to generate first message after clear:", err);
-      setConversationHistory([  // Replace entire history with fallback
-        {
-          id: `ai-fallback-cleared-${Date.now()}`,
-          role: 'assistant',
-          content: "Hello again! How can I assist you now?",
-          timestamp: new Date(),
-        },
-      ]);
-    } finally {
-      initialLoadAttempted.current = true; // Mark that a "first message" sequence has completed
-      setIsLoading(false);
-    }
-  };
-
   const toggleShowJustifications = () => {
     setShowJustifications(prev => !prev);
   };
-
-  if (isLoading && conversationHistory.length === 0 && initialLoadAttempted.current) {
-    return (
-      <div className="flex flex-1 flex-col items-center justify-center p-6 bg-muted/30 h-[calc(100vh-4rem)]">
+  
+  // Show main loading screen if user is not yet available or initial auth is loading
+  if (!user && (isLoading || isFetchingInitialMessage)) {
+     return (
+      <div className="flex flex-1 flex-col items-center justify-center p-6 bg-muted/30 h-[calc(100vh-8rem)]"> {/* Adjusted height for header/footer */}
         <Card className="w-full max-w-md p-6 sm:p-8 text-center shadow-xl rounded-xl">
           <div className="mx-auto mb-6 flex h-16 w-16 sm:h-20 sm:w-20 items-center justify-center rounded-full bg-primary/10 text-primary animate-pulse">
             <MessageCircleHeart size={40} strokeWidth={1.5} className="sm:h-10 sm:w-10" />
@@ -180,20 +166,44 @@ export function ChatView() {
       </div>
     );
   }
+  
+  // Show specific loader for the first AI message if it's a new chat and history is empty
+  if (activeChatId === null && isFetchingInitialMessage && conversationHistory.length === 0) {
+    return (
+      <div className="flex flex-1 flex-col items-center justify-center p-6 bg-muted/30 h-[calc(100vh-8rem)]">
+         <Card className="w-full max-w-md p-6 sm:p-8 text-center shadow-xl rounded-xl">
+          <div className="mx-auto mb-6 flex h-16 w-16 sm:h-20 sm:w-20 items-center justify-center rounded-full bg-primary/10 text-primary animate-pulse">
+            <MessageCircleHeart size={40} strokeWidth={1.5} className="sm:h-10 sm:w-10" />
+          </div>
+          <CardTitle className="text-xl sm:text-2xl font-semibold text-foreground mb-3">Starting your new chat...</CardTitle>
+          <CardDescription className="text-muted-foreground mb-6 text-sm sm:text-base">
+            Empathy.AI is preparing a fresh start for you.
+          </CardDescription>
+          <LoadingSpinner size="lg" />
+        </Card>
+      </div>
+    );
+  }
+
 
   return (
-    <div className="flex h-[calc(100vh-4rem)] flex-col bg-muted/30">
+    <div className="flex h-[calc(100vh-8rem)] flex-col bg-muted/30"> {/* Adjusted height for header/footer */}
       <ScrollArea className="flex-1 p-4" ref={scrollAreaRef}>
         <div className="container mx-auto max-w-3xl space-y-4">
-          {conversationHistory.length === 0 && !isLoading && (
+          {conversationHistory.length === 0 && !isLoading && !isFetchingInitialMessage && (
              <Card className="mt-8 text-center">
              <CardHeader>
                 <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-primary/10 text-primary">
                     <Bot size={32} />
                 </div>
-               <CardTitle>Welcome to Empathy.AI</CardTitle>
+               <CardTitle>
+                {activeChatId === null ? "Welcome to Empathy.AI" : "Chatting"}
+               </CardTitle>
                <CardDescription>
-                 I'm here to listen and help. Type your message below to start our conversation.
+                 {activeChatId === null 
+                   ? "I'm here to listen and help. Type your message below to start our conversation."
+                   : "Type your message to continue this conversation."
+                 }
                </CardDescription>
              </CardHeader>
            </Card>
@@ -219,8 +229,8 @@ export function ChatView() {
       </ScrollArea>
       <MessageInput 
         onSendMessage={handleSendMessage} 
-        onClearConversation={handleClearConversation} 
-        isLoading={isLoading}
+        onStartNewChat={onStartNewChat}
+        isLoading={isLoading || isFetchingInitialMessage}
         showJustifications={showJustifications}
         onToggleShowJustifications={toggleShowJustifications}
       />
