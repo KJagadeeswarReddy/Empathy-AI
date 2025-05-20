@@ -125,9 +125,9 @@ export function AuthenticatedPageLayout({ children, title = "Empathy.AI", sideba
             </div>
           </header>
           <main className="flex-1">{children}</main>
-          <footer className="pb-4 pt-2 md:px-8"> {/* Removed border-t, adjusted padding */}
-            <div className="container flex flex-col items-center justify-center gap-2 md:flex-row"> {/* Reduced gap */}
-              <p className="text-balance text-center text-xs leading-tight text-muted-foreground md:text-left"> {/* Adjusted text size and leading */}
+          <footer className="py-2 md:px-8"> {/* Reduced padding further */}
+            <div className="container flex flex-col items-center justify-center gap-1 md:flex-row"> {/* Reduced gap */}
+              <p className="text-balance text-center text-xs leading-tight text-muted-foreground md:text-left">
                 &copy; {new Date().getFullYear()} Empathy.AI. All rights reserved.
               </p>
             </div>

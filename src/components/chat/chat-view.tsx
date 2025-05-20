@@ -10,21 +10,28 @@ import { useAuth } from '@/hooks/use-auth';
 import { LoadingSpinner } from '@/components/ui/loading-spinner';
 import { generateFirstMessage } from '@/ai/flows/generate-first-message';
 import { useToast } from '@/hooks/use-toast';
-import { Bot, MessageCircleHeart } from 'lucide-react'; 
+import { Bot, MessageCircleHeart, Eye, EyeOff } from 'lucide-react';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
+import { Button } from '@/components/ui/button';
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
 
 
 interface ChatViewProps {
   activeChatId: string | null;
-  onStartNewChat: () => void; 
+  onStartNewChat: () => void;
 }
 
 export function ChatView({ activeChatId, onStartNewChat }: ChatViewProps) {
   const [conversationHistory, setConversationHistory] = useState<Message[]>([]);
-  const [isLoading, setIsLoading] = useState(false); 
+  const [isLoading, setIsLoading] = useState(false);
   const [isFetchingInitialMessage, setIsFetchingInitialMessage] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [showJustifications, setShowJustifications] = useState(true); 
+  const [showJustifications, setShowJustifications] = useState(true);
   const { user } = useAuth();
   const scrollAreaRef = useRef<HTMLDivElement>(null);
   const { toast } = useToast();
@@ -41,21 +48,19 @@ export function ChatView({ activeChatId, onStartNewChat }: ChatViewProps) {
 
   useEffect(() => {
     const currentChatContext = activeChatId || 'new';
-    // Only proceed if the context changed or if it's the initial load for 'new' and history is empty
     if (initialLoadAttemptedForChat.current === currentChatContext && (currentChatContext !== 'new' || conversationHistory.length > 0)) {
       return;
     }
-    
-    setConversationHistory([]); 
+
+    setConversationHistory([]);
     setError(null);
     initialLoadAttemptedForChat.current = currentChatContext;
 
-    if (activeChatId === null) { 
+    if (activeChatId === null) {
       setIsFetchingInitialMessage(true);
       generateFirstMessage({ userPrompt: "User has started a new chat." })
         .then(aiWelcomeResponse => {
-          // Check if we are still in the 'new' chat context and haven't loaded messages yet
-          if (initialLoadAttemptedForChat.current === 'new' && conversationHistory.length === 0) { 
+          if (initialLoadAttemptedForChat.current === 'new' && conversationHistory.length === 0) {
             setConversationHistory([
               {
                 id: `ai-new-${Date.now()}`,
@@ -88,10 +93,10 @@ export function ChatView({ activeChatId, onStartNewChat }: ChatViewProps) {
           }
         });
     } else {
-      setIsFetchingInitialMessage(false); 
+      setIsFetchingInitialMessage(false);
       // Placeholder: In a real app, load history for activeChatId
       // For now, we'll just clear or show a specific message for existing chats
-      setConversationHistory([
+       setConversationHistory([
         // {
         //   id: `ai-loaded-${Date.now()}`,
         //   role: 'assistant',
@@ -101,10 +106,7 @@ export function ChatView({ activeChatId, onStartNewChat }: ChatViewProps) {
         // },
       ]);
     }
-  // Ensure dependencies are stable or correctly reflect what triggers the effect.
-  // Using conversationHistory.length can sometimes be tricky if other state updates cause re-renders.
-  // The ref `initialLoadAttemptedForChat` helps manage the "run once" logic for a given chat context.
-  }, [activeChatId, user, toast, onStartNewChat, conversationHistory.length]); 
+  }, [activeChatId, user, toast, onStartNewChat, conversationHistory.length]);
 
 
   const handleSendMessage = async (userInput: string) => {
@@ -125,7 +127,7 @@ export function ChatView({ activeChatId, onStartNewChat }: ChatViewProps) {
     setError(null);
 
     try {
-      await new Promise(resolve => setTimeout(resolve, 1500)); 
+      await new Promise(resolve => setTimeout(resolve, 1500));
       const aiResponse: Message = {
         id: `ai-${Date.now()}`,
         role: 'assistant',
@@ -157,7 +159,7 @@ export function ChatView({ activeChatId, onStartNewChat }: ChatViewProps) {
   const toggleShowJustifications = () => {
     setShowJustifications(prev => !prev);
   };
-  
+
   if (!user && (isLoading || isFetchingInitialMessage)) {
      return (
       <div className="flex flex-1 flex-col items-center justify-center p-6 bg-background h-[calc(100vh-8rem)]">
@@ -174,7 +176,7 @@ export function ChatView({ activeChatId, onStartNewChat }: ChatViewProps) {
       </div>
     );
   }
-  
+
   if (activeChatId === null && isFetchingInitialMessage && conversationHistory.length === 0) {
     return (
       <div className="flex flex-1 flex-col items-center justify-center p-6 bg-background h-[calc(100vh-8rem)]">
@@ -193,45 +195,62 @@ export function ChatView({ activeChatId, onStartNewChat }: ChatViewProps) {
   }
 
   return (
-    <div className="flex h-[calc(100vh-8rem)] flex-col bg-background">
-      <ScrollArea className="flex-1 p-4" ref={scrollAreaRef}>
-        <div className="container mx-auto max-w-3xl space-y-1"> 
-          {conversationHistory.length === 0 && !isLoading && !isFetchingInitialMessage && (
-            <div className="mt-8 text-center py-10">
-              <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-primary/10 text-primary">
-                  <Bot size={32} />
+    <TooltipProvider>
+      <div className="flex h-[calc(100vh-8rem)] flex-col bg-background">
+        <ScrollArea className="flex-1 p-4" ref={scrollAreaRef}>
+          <div className="container mx-auto max-w-3xl space-y-1">
+            {conversationHistory.length === 0 && !isLoading && !isFetchingInitialMessage && (
+              <div className="mt-8 text-center py-10">
+                <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-primary/10 text-primary">
+                    <Bot size={32} />
+                </div>
+                <h2 className="text-xl font-semibold text-foreground">
+                  {activeChatId === null ? "Welcome to Empathy.AI" : "Chat Ready"}
+                </h2>
+                <p className="text-muted-foreground mt-2">
+                  {activeChatId === null
+                    ? "I'm here to listen and help. Type your message below to start our conversation."
+                    : "Type your message to continue this conversation."
+                  }
+                </p>
               </div>
-              <h2 className="text-xl font-semibold text-foreground">
-                {activeChatId === null ? "Welcome to Empathy.AI" : "Chat Ready"}
-              </h2>
-              <p className="text-muted-foreground mt-2">
-                {activeChatId === null 
-                  ? "I'm here to listen and help. Type your message below to start our conversation."
-                  : "Type your message to continue this conversation."
-                }
-              </p>
-            </div>
-          )}
-          {conversationHistory.map((msg) => (
-            <ChatMessage key={msg.id} message={msg} showJustifications={showJustifications} />
-          ))}
-          {isLoading && conversationHistory.length > 0 && conversationHistory[conversationHistory.length -1].role === 'user' && (
-            <div className="flex items-end space-x-3 py-2 justify-start">
-              {/* Avatar removed for consistency */}
-              <div className={("max-w-xs md:max-w-md lg:max-w-lg p-3 rounded-2xl text-sm break-words bg-muted text-muted-foreground rounded-bl-none")}>
-                  <LoadingSpinner size="sm" /> <span className="ml-2 text-sm">AI is thinking...</span>
+            )}
+            {conversationHistory.map((msg) => (
+              <ChatMessage key={msg.id} message={msg} showJustifications={showJustifications} />
+            ))}
+            {isLoading && conversationHistory.length > 0 && conversationHistory[conversationHistory.length -1].role === 'user' && (
+              <div className="flex items-end space-x-3 py-2 justify-start">
+                {/* Avatar removed for consistency */}
+                <div className={("max-w-xs md:max-w-md lg:max-w-lg p-3 rounded-2xl text-sm break-words bg-muted text-muted-foreground rounded-bl-none")}>
+                    <LoadingSpinner size="sm" /> <span className="ml-2 text-sm">AI is thinking...</span>
+                </div>
               </div>
-            </div>
-          )}
-        </div>
-      </ScrollArea>
-      <MessageInput 
-        onSendMessage={handleSendMessage} 
-        isLoading={isLoading || isFetchingInitialMessage}
-      />
-      <footer className="pt-1 pb-2 text-center text-xs text-muted-foreground bg-background max-w-3xl mx-auto w-full">
-        Empathy.AI can make mistakes. Consider checking important information.
-      </footer>
-    </div>
+            )}
+          </div>
+        </ScrollArea>
+        <MessageInput
+          onSendMessage={handleSendMessage}
+          isLoading={isLoading || isFetchingInitialMessage}
+        />
+        <footer className="py-1 text-xs text-muted-foreground bg-background max-w-3xl mx-auto w-full flex justify-between items-center px-4">
+          <span>Empathy.AI can make mistakes. Consider checking important information.</span>
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <Button
+                variant="ghost"
+                size="icon"
+                onClick={toggleShowJustifications}
+                className="h-7 w-7 text-muted-foreground hover:text-foreground"
+              >
+                {showJustifications ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+              </Button>
+            </TooltipTrigger>
+            <TooltipContent side="top">
+              <p>{showJustifications ? "Hide Justifications" : "Show Justifications"}</p>
+            </TooltipContent>
+          </Tooltip>
+        </footer>
+      </div>
+    </TooltipProvider>
   );
 }
