@@ -67,21 +67,24 @@ export default function ChatPage() {
       <SidebarHeader className="p-2 flex items-center justify-between">
         <h2 className="text-lg font-semibold px-2 group-data-[collapsible=icon]:hidden">Conversations</h2>
         <div className="flex items-center">
+          {/* This SidebarTrigger is for desktop, within the sidebar header */}
           <SidebarTrigger className="hidden md:flex" /> 
         </div>
       </SidebarHeader>
       <SidebarContent className="p-0">
-        <div className="p-2">
+        {/* This div and its content will be hidden when collapsed */}
+        <div className="p-2 group-data-[collapsible=icon]:hidden">
           <Button 
             variant="outline" 
-            className="w-full justify-start group-data-[collapsible=icon]:justify-center group-data-[collapsible=icon]:px-0 group-data-[collapsible=icon]:w-auto"
+            className="w-full justify-start" // Removed icon-specific classes as the parent div handles hiding
             onClick={handleNewChat}
           >
-            <MessageSquarePlus className="mr-2 group-data-[collapsible=icon]:mr-0" />
-            <span className="group-data-[collapsible=icon]:hidden">New Chat</span>
+            <MessageSquarePlus className="mr-2" />
+            <span>New Chat</span>
           </Button>
         </div>
-        <ScrollArea className="h-[calc(100%-4rem)]"> {/* Adjust height as needed */}
+        {/* This ScrollArea and its content will be hidden when collapsed */}
+        <ScrollArea className="h-[calc(100%-4rem)] group-data-[collapsible=icon]:hidden">
           <SidebarMenu className="px-2">
             {chatSessions.sort((a,b) => b.lastActivity.getTime() - a.lastActivity.getTime()).map((session) => (
               <SidebarMenuItem key={session.id}>
@@ -92,25 +95,16 @@ export default function ChatPage() {
                   tooltip={{content: session.title || `Chat ${session.id}`, side: "right"}}
                 >
                   <div className="flex flex-col overflow-hidden">
-                    <span className="truncate font-medium group-data-[collapsible=icon]:hidden">{session.title || `Chat ${session.id}`}</span>
-                    <span className="text-xs text-muted-foreground truncate group-data-[collapsible=icon]:hidden">
+                    <span className="truncate font-medium">{session.title || `Chat ${session.id}`}</span>
+                    <span className="text-xs text-muted-foreground truncate">
                       {formatDistanceToNow(session.lastActivity, { addSuffix: true })}
                     </span>
                   </div>
-                  {/* Placeholder for actions like delete - not fully implemented in sidebar.tsx styles */}
-                  {/* <Button 
-                    variant="ghost" 
-                    size="icon" 
-                    className="h-6 w-6 opacity-0 group-hover/menu-item:opacity-100 group-data-[collapsible=icon]:hidden"
-                    onClick={(e) => { e.stopPropagation(); handleDeleteChat(session.id); }}
-                  >
-                    <Trash2 className="h-4 w-4 text-destructive" />
-                  </Button> */}
                 </SidebarMenuButton>
               </SidebarMenuItem>
             ))}
              {chatSessions.length === 0 && (
-              <div className="p-4 text-center text-sm text-muted-foreground group-data-[collapsible=icon]:hidden">
+              <div className="p-4 text-center text-sm text-muted-foreground">
                 <Bot className="mx-auto mb-2 h-8 w-8 text-muted-foreground/50" />
                 No past conversations yet. Start a new one!
               </div>
@@ -134,8 +128,6 @@ export default function ChatPage() {
   return (
     <AuthenticatedPageLayout title="Empathy.AI Chat" sidebarComponent={sidebarComponentContent}>
       <ChatView 
-        // Use key to force re-render ChatView if activeChatId changes to null (new chat)
-        // or to a different chat ID. This helps reset its internal state.
         key={activeChatId || 'new-chat'} 
         activeChatId={activeChatId}
         onStartNewChat={handleNewChat} 
@@ -143,3 +135,4 @@ export default function ChatPage() {
     </AuthenticatedPageLayout>
   );
 }
+
