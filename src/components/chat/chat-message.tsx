@@ -8,6 +8,7 @@ import { formatDistanceToNow } from 'date-fns';
 
 interface ChatMessageProps {
   message: Message;
+  showJustifications: boolean;
 }
 
 // A simple markdown-like renderer for bold and italics
@@ -37,7 +38,7 @@ const SimpleMarkdownRenderer = ({ text }: { text: string }) => {
 };
 
 
-export function ChatMessage({ message }: ChatMessageProps) {
+export function ChatMessage({ message, showJustifications }: ChatMessageProps) {
   const isUser = message.role === 'user';
   const avatarInitial = isUser ? (message.id.slice(0,1).toUpperCase() || 'U') : 'AI';
   const avatarIcon = isUser ? <User className="h-5 w-5" /> : <Bot className="h-5 w-5" />;
@@ -62,7 +63,7 @@ export function ChatMessage({ message }: ChatMessageProps) {
             <span className="text-xs text-muted-foreground">
             {formatDistanceToNow(new Date(message.timestamp), { addSuffix: true })}
             </span>
-            {!isUser && message.justification && (
+            {!isUser && message.justification && showJustifications && (
             <Card className="mt-1 p-2 text-xs bg-muted/50 border-dashed border-muted-foreground/30 rounded-md">
                 <p className="italic text-muted-foreground">
                 <span className="font-semibold">Justification:</span> {message.justification}

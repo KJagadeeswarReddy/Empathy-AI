@@ -11,7 +11,6 @@ import { LoadingSpinner } from '@/components/ui/loading-spinner';
 import { generateFirstMessage } from '@/ai/flows/generate-first-message';
 import { useToast } from '@/hooks/use-toast';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { Bot, MessageCircleHeart } from 'lucide-react';
 
 // const API_ENDPOINT = '/api/v1/chat/send'; // Placeholder for your backend API - not used currently
@@ -20,6 +19,7 @@ export function ChatView() {
   const [conversationHistory, setConversationHistory] = useState<Message[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [showJustifications, setShowJustifications] = useState(true);
   const { user } = useAuth();
   const scrollAreaRef = useRef<HTMLDivElement>(null);
   const { toast } = useToast();
@@ -94,16 +94,6 @@ export function ChatView() {
     setIsLoading(true);
     setError(null);
 
-    // const payload = {
-    //   userId: user.uid,
-    //   conversationHistory: [...conversationHistory, userMessage].map(msg => ({
-    //     role: msg.role,
-    //     content: msg.content,
-    //     justification: msg.justification
-    //   })),
-    //   message: userInput,
-    // };
-
     try {
       // Simulate API call delay
       await new Promise(resolve => setTimeout(resolve, 1500)); 
@@ -169,6 +159,10 @@ export function ChatView() {
     }
   };
 
+  const toggleShowJustifications = () => {
+    setShowJustifications(prev => !prev);
+  };
+
   if (isLoading && conversationHistory.length === 0 && initialLoadAttempted.current) {
     return (
       <div className="flex flex-1 flex-col items-center justify-center p-6 bg-muted/30 h-[calc(100vh-4rem)]">
@@ -204,7 +198,7 @@ export function ChatView() {
            </Card>
           )}
           {conversationHistory.map((msg) => (
-            <ChatMessage key={msg.id} message={msg} />
+            <ChatMessage key={msg.id} message={msg} showJustifications={showJustifications} />
           ))}
           {isLoading && conversationHistory.length > 0 && conversationHistory[conversationHistory.length -1].role === 'user' && (
             <div className="flex items-start space-x-3 py-3 justify-start">
@@ -222,7 +216,13 @@ export function ChatView() {
           )}
         </div>
       </ScrollArea>
-      <MessageInput onSendMessage={handleSendMessage} onClearConversation={handleClearConversation} isLoading={isLoading} />
+      <MessageInput 
+        onSendMessage={handleSendMessage} 
+        onClearConversation={handleClearConversation} 
+        isLoading={isLoading}
+        showJustifications={showJustifications}
+        onToggleShowJustifications={toggleShowJustifications}
+      />
     </div>
   );
 }
