@@ -41,7 +41,8 @@ export function ChatView({ activeChatId, onStartNewChat }: ChatViewProps) {
 
   useEffect(() => {
     const currentChatContext = activeChatId || 'new';
-    if (initialLoadAttemptedForChat.current === currentChatContext && conversationHistory.length > 0) {
+    // Only proceed if the context changed or if it's the initial load for 'new' and history is empty
+    if (initialLoadAttemptedForChat.current === currentChatContext && (currentChatContext !== 'new' || conversationHistory.length > 0)) {
       return;
     }
     
@@ -53,7 +54,8 @@ export function ChatView({ activeChatId, onStartNewChat }: ChatViewProps) {
       setIsFetchingInitialMessage(true);
       generateFirstMessage({ userPrompt: "User has started a new chat." })
         .then(aiWelcomeResponse => {
-          if (initialLoadAttemptedForChat.current === 'new') { 
+          // Check if we are still in the 'new' chat context and haven't loaded messages yet
+          if (initialLoadAttemptedForChat.current === 'new' && conversationHistory.length === 0) { 
             setConversationHistory([
               {
                 id: `ai-new-${Date.now()}`,
@@ -68,7 +70,7 @@ export function ChatView({ activeChatId, onStartNewChat }: ChatViewProps) {
         .catch(err => {
           console.error("Failed to generate first message for new chat:", err);
           toast({ title: "Error", description: "Could not start new conversation.", variant: "destructive" });
-          if (initialLoadAttemptedForChat.current === 'new') {
+          if (initialLoadAttemptedForChat.current === 'new' && conversationHistory.length === 0) {
             setConversationHistory([
               {
                 id: `ai-fallback-new-${Date.now()}`,
@@ -99,7 +101,10 @@ export function ChatView({ activeChatId, onStartNewChat }: ChatViewProps) {
         // },
       ]);
     }
-  }, [activeChatId, user, toast, conversationHistory.length]); // Added conversationHistory.length to help manage re-runs
+  // Ensure dependencies are stable or correctly reflect what triggers the effect.
+  // Using conversationHistory.length can sometimes be tricky if other state updates cause re-renders.
+  // The ref `initialLoadAttemptedForChat` helps manage the "run once" logic for a given chat context.
+  }, [activeChatId, user, toast, onStartNewChat, conversationHistory.length]); 
 
 
   const handleSendMessage = async (userInput: string) => {
@@ -224,7 +229,7 @@ export function ChatView({ activeChatId, onStartNewChat }: ChatViewProps) {
         onSendMessage={handleSendMessage} 
         isLoading={isLoading || isFetchingInitialMessage}
       />
-      <footer className="py-3 text-center text-xs text-muted-foreground border-t bg-background max-w-3xl mx-auto w-full">
+      <footer className="pt-1 pb-2 text-center text-xs text-muted-foreground bg-background max-w-3xl mx-auto w-full">
         Empathy.AI can make mistakes. Consider checking important information.
       </footer>
     </div>

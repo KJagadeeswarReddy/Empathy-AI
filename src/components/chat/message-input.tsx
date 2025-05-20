@@ -29,7 +29,7 @@ export function MessageInput({
   return (
     <form
       onSubmit={handleSubmit}
-      className="sticky bottom-0 z-10 flex items-center space-x-2 border-t bg-background p-3 sm:p-4 max-w-3xl mx-auto w-full"
+      className="sticky bottom-0 z-10 flex items-center space-x-2 bg-background p-3 sm:p-4 max-w-3xl mx-auto w-full" // Removed border-t
     >
       <Input
         type="text"
