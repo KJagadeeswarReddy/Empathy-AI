@@ -156,22 +156,3 @@ export function AuthForm({ mode, onSubmit, errorMessage }: AuthFormProps) {
     </Card>
   );
 }
-
-// Define Zod schemas for validation
-// This should be in a separate file like 'src/lib/schemas/auth-schemas.ts' but placing here for brevity.
-const PasswordSchema = z.string().min(8, { message: "Password must be at least 8 characters long." });
-
-export const LoginSchema = z.object({
-  email: z.string().email({ message: "Please enter a valid email address." }),
-  password: z.string().min(1, { message: "Password is required." }),
-});
-
-export const SignupSchema = z.object({
-  email: z.string().email({ message: "Please enter a valid email address." }),
-  password: PasswordSchema,
-  confirmPassword: PasswordSchema,
-})
-.refine((data) => data.password === data.confirmPassword, {
-  message: "Passwords do not match.",
-  path: ["confirmPassword"], // Path of error
-});
