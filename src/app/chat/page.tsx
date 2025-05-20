@@ -89,10 +89,10 @@ export default function ChatPage() {
                   onClick={() => handleSelectChat(session.id)}
                   isActive={activeChatId === session.id}
                   className="w-full justify-between text-left h-auto py-2"
-                  tooltip={{content: session.title, side: "right", className: "group-data-[collapsible=icon]:flex hidden"}}
+                  tooltip={{content: session.title || `Chat ${session.id}`, side: "right"}}
                 >
                   <div className="flex flex-col overflow-hidden">
-                    <span className="truncate font-medium">{session.title || `Chat ${session.id}`}</span>
+                    <span className="truncate font-medium group-data-[collapsible=icon]:hidden">{session.title || `Chat ${session.id}`}</span>
                     <span className="text-xs text-muted-foreground truncate group-data-[collapsible=icon]:hidden">
                       {formatDistanceToNow(session.lastActivity, { addSuffix: true })}
                     </span>
