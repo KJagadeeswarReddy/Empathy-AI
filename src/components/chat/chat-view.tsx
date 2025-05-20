@@ -10,14 +10,10 @@ import { useAuth } from '@/hooks/use-auth';
 import { LoadingSpinner } from '@/components/ui/loading-spinner';
 import { generateFirstMessage } from '@/ai/flows/generate-first-message';
 import { useToast } from '@/hooks/use-toast';
-import { Bot, MessageCircleHeart, Eye, EyeOff } from 'lucide-react';
-import { Avatar, AvatarFallback } from '@/components/ui/avatar';
-import { Button } from '@/components/ui/button';
+import { Bot, MessageCircleHeart } from 'lucide-react'; // Eye, EyeOff removed as button moves to MessageInput
+
 import {
-  Tooltip,
-  TooltipContent,
   TooltipProvider,
-  TooltipTrigger,
 } from "@/components/ui/tooltip";
 
 
@@ -220,7 +216,6 @@ export function ChatView({ activeChatId, onStartNewChat }: ChatViewProps) {
             ))}
             {isLoading && conversationHistory.length > 0 && conversationHistory[conversationHistory.length -1].role === 'user' && (
               <div className="flex items-end space-x-3 py-2 justify-start">
-                {/* Avatar removed for consistency */}
                 <div className={("max-w-xs md:max-w-md lg:max-w-lg p-3 rounded-2xl text-sm break-words bg-muted text-muted-foreground rounded-bl-none")}>
                     <LoadingSpinner size="sm" /> <span className="ml-2 text-sm">AI is thinking...</span>
                 </div>
@@ -231,24 +226,12 @@ export function ChatView({ activeChatId, onStartNewChat }: ChatViewProps) {
         <MessageInput
           onSendMessage={handleSendMessage}
           isLoading={isLoading || isFetchingInitialMessage}
+          showJustifications={showJustifications}
+          onToggleJustifications={toggleShowJustifications}
         />
-        <footer className="py-1 text-xs text-muted-foreground bg-background max-w-3xl mx-auto w-full flex justify-between items-center px-4">
+        <footer className="py-1 text-xs text-muted-foreground bg-background max-w-3xl mx-auto w-full flex justify-center items-center px-4">
           <span>Empathy.AI can make mistakes. Consider checking important information.</span>
-          <Tooltip>
-            <TooltipTrigger asChild>
-              <Button
-                variant="ghost"
-                size="icon"
-                onClick={toggleShowJustifications}
-                className="h-7 w-7 text-muted-foreground hover:text-foreground"
-              >
-                {showJustifications ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
-              </Button>
-            </TooltipTrigger>
-            <TooltipContent side="top">
-              <p>{showJustifications ? "Hide Justifications" : "Show Justifications"}</p>
-            </TooltipContent>
-          </Tooltip>
+          {/* Justification toggle button removed from here */}
         </footer>
       </div>
     </TooltipProvider>
