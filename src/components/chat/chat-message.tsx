@@ -1,8 +1,10 @@
 // src/components/chat/chat-message.tsx
 import type { Message } from '@/types';
-import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
-import { Bot, User } from 'lucide-react';
-import { Card, CardContent, CardFooter } from '@/components/ui/card';
+// Avatar and icons were removed in a previous step to match ChatGPT style
+// import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
+// import { Bot, User } from 'lucide-react';
+// Card components are being removed to reduce "boxy" feel.
+// import { Card, CardContent, CardFooter } from '@/components/ui/card';
 import { cn } from '@/lib/utils';
 import { formatDistanceToNow } from 'date-fns';
 
@@ -13,23 +15,23 @@ interface ChatMessageProps {
 
 // A simple markdown-like renderer for bold and italics
 const SimpleMarkdownRenderer = ({ text }: { text: string }) => {
-  const parts = text.split(/(\*\*[^*]+\*\*|\*[^*]+\*)/g);
+  const parts = text.split(/(\*\*[^*]+\*\*|\*[^*]+\*|```[^`]+```)/g);
   return (
     <>
       {parts.map((part, index) => {
+        if (part === undefined) return null; // Handle undefined parts
         if (part.startsWith('**') && part.endsWith('**')) {
           return <strong key={index}>{part.slice(2, -2)}</strong>;
         }
         if (part.startsWith('*') && part.endsWith('*')) {
           return <em key={index}>{part.slice(1, -1)}</em>;
         }
+        if (part.startsWith('```') && part.endsWith('```')) {
+          return <pre key={index} className="my-2 p-2 bg-muted/50 dark:bg-black/30 rounded-md text-sm overflow-x-auto">{part.slice(3,-3).trim()}</pre>
+        }
         // Basic list item handling (very rudimentary)
         if (part.trim().startsWith('- ')) {
             return <li key={index} className="ml-4 list-disc">{part.trim().substring(2)}</li>;
-        }
-        // Basic code block (simple pre for now)
-        if (part.startsWith('```') && part.endsWith('```')) {
-            return <pre key={index} className="my-2 p-2 bg-muted rounded-md text-sm overflow-x-auto">{part.slice(3,-3).trim()}</pre>
         }
         return <span key={index}>{part}</span>;
       })}
@@ -40,42 +42,38 @@ const SimpleMarkdownRenderer = ({ text }: { text: string }) => {
 
 export function ChatMessage({ message, showJustifications }: ChatMessageProps) {
   const isUser = message.role === 'user';
-  const avatarInitial = isUser ? (message.id.slice(0,1).toUpperCase() || 'U') : 'AI';
-  const avatarIcon = isUser ? <User className="h-5 w-5" /> : <Bot className="h-5 w-5" />;
 
   return (
-    <div className={cn("flex items-start space-x-3 py-3", isUser ? "justify-end" : "justify-start")}>
-      {!isUser && (
-        <Avatar className="h-10 w-10 border bg-accent/20 text-accent">
-          <AvatarFallback className="bg-transparent">{avatarIcon}</AvatarFallback>
-        </Avatar>
-      )}
-      <div className={cn("max-w-xs md:max-w-md lg:max-w-lg", isUser ? "order-1 items-end" : "order-2 items-start")}>
-        <Card className={cn(
-          "rounded-2xl shadow-md", 
-          isUser ? "bg-primary/80 text-primary-foreground rounded-br-none" : "bg-card text-card-foreground rounded-bl-none"
-        )}>
-          <CardContent className="p-3 text-sm break-words">
-            <SimpleMarkdownRenderer text={message.content} />
-          </CardContent>
-        </Card>
-        <div className={cn("mt-1 flex items-center space-x-2", isUser ? "justify-end pr-1" : "justify-start pl-1")}>
-            <span className="text-xs text-muted-foreground">
-            {formatDistanceToNow(new Date(message.timestamp), { addSuffix: true })}
+    <div className={cn("flex items-end space-x-3 py-2", isUser ? "justify-end" : "justify-start")}>
+      <div className={cn(
+          "max-w-xs md:max-w-md lg:max-w-lg p-3 rounded-2xl text-sm break-words",
+          isUser 
+            ? "bg-primary text-primary-foreground rounded-br-none order-1" 
+            : "bg-muted text-muted-foreground rounded-bl-none order-2"
+        )}
+      >
+        <SimpleMarkdownRenderer text={message.content} />
+         {/* Timestamp and Justification moved inside the bubble for sleeker look if !isUser */}
+        {!isUser && (
+          <div className={cn("mt-2 flex flex-col items-start text-xs", !isUser && "text-muted-foreground/80")}>
+            <span className="opacity-80">
+              {formatDistanceToNow(new Date(message.timestamp), { addSuffix: true })}
             </span>
-            {!isUser && message.justification && showJustifications && (
-            <Card className="mt-1 p-2 text-xs bg-muted/50 border-dashed border-muted-foreground/30 rounded-md">
-                <p className="italic text-muted-foreground">
+            {message.justification && showJustifications && (
+              <div className="mt-1 p-1.5 text-xs bg-background/50 dark:bg-muted/30 border border-border/50 rounded-md italic">
                 <span className="font-semibold">Justification:</span> {message.justification}
-                </p>
-            </Card>
+              </div>
             )}
-        </div>
+          </div>
+        )}
       </div>
+      {/* Timestamp and Justification outside for user messages */}
       {isUser && (
-         <Avatar className="h-10 w-10 border bg-secondary/50 text-secondary-foreground">
-          <AvatarFallback className="bg-transparent">{avatarIcon}</AvatarFallback>
-        </Avatar>
+        <div className={cn("order-2 flex flex-col items-end text-xs text-muted-foreground/80", isUser ? "pr-1" : "pl-1")}>
+           <span>
+            {formatDistanceToNow(new Date(message.timestamp), { addSuffix: true })}
+           </span>
+        </div>
       )}
     </div>
   );

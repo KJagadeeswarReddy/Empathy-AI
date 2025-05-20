@@ -3,25 +3,26 @@
 
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Send, PlusSquare, Eye, EyeOff } from "lucide-react"; // Changed Trash2 to PlusSquare
+import { Send } from "lucide-react"; // PlusSquare, Eye, EyeOff removed for simplification
 import type { FormEvent } from 'react';
 import { useState } from "react";
-import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
+// Tooltip components are not needed if icons are removed
+// import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 
 interface MessageInputProps {
   onSendMessage: (message: string) => void;
-  onStartNewChat?: () => void; // Renamed from onClearConversation
+  // onStartNewChat?: () => void; // Prop kept if needed, but icon removed
   isLoading: boolean;
-  showJustifications: boolean;
-  onToggleShowJustifications: () => void;
+  // showJustifications: boolean; // Prop kept if needed, but icon removed
+  // onToggleShowJustifications: () => void; // Prop kept if needed, but icon removed
 }
 
 export function MessageInput({ 
   onSendMessage, 
-  onStartNewChat, // Renamed
+  // onStartNewChat, 
   isLoading,
-  showJustifications,
-  onToggleShowJustifications
+  // showJustifications,
+  // onToggleShowJustifications
 }: MessageInputProps) {
   const [message, setMessage] = useState("");
 
@@ -36,9 +37,10 @@ export function MessageInput({
   return (
     <form
       onSubmit={handleSubmit}
-      className="sticky bottom-0 z-10 mt-auto flex items-center space-x-2 border-t bg-background p-4 shadow-sm"
+      className="sticky bottom-0 z-10 flex items-center space-x-2 border-t bg-background p-3 sm:p-4" // Added sm:p-4 for slightly more padding on larger screens
     >
-      {onStartNewChat && ( // Changed from onClearConversation
+      {/* Icons for New Chat and Justifications were removed to simplify the input bar based on general ChatGPT aesthetic */}
+      {/* {onStartNewChat && ( 
         <TooltipProvider>
           <Tooltip>
             <TooltipTrigger asChild>
@@ -46,10 +48,10 @@ export function MessageInput({
                 type="button"
                 variant="ghost"
                 size="icon"
-                onClick={onStartNewChat} // Changed
+                onClick={onStartNewChat} 
                 disabled={isLoading}
-                aria-label="Start new chat" // Changed
-                className="text-muted-foreground hover:text-primary" // Changed hover color
+                aria-label="Start new chat" 
+                className="text-muted-foreground hover:text-primary"
               >
                 <PlusSquare className="h-5 w-5" /> 
               </Button>
@@ -79,31 +81,25 @@ export function MessageInput({
             <p>{showJustifications ? "Hide Justifications" : "Show Justifications"}</p>
           </TooltipContent>
         </Tooltip>
-      </TooltipProvider>
+      </TooltipProvider> */}
       <Input
         type="text"
         placeholder="Type your message..."
         value={message}
         onChange={(e) => setMessage(e.target.value)}
         disabled={isLoading}
-        className="flex-1 rounded-full px-4 py-3 text-base focus-visible:ring-primary/50"
+        className="flex-1 rounded-full px-4 py-3 h-12 text-base focus-visible:ring-primary/50 shadow-sm" // Added h-12 and shadow-sm
         aria-label="Chat message input"
       />
       <Button 
         type="submit" 
         size="icon" 
         disabled={isLoading || !message.trim()} 
-        className="rounded-full bg-primary hover:bg-primary/90 text-primary-foreground"
+        className="rounded-full bg-primary hover:bg-primary/90 text-primary-foreground h-10 w-10 sm:h-12 sm:w-12 flex-shrink-0" // Made size consistent and ensured no shrink
         aria-label="Send message"
       >
-        {isLoading && message.trim() === "" ? ( 
-          <svg className="animate-spin h-5 w-5 text-primary-foreground" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-            <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-            <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-          </svg>
-        ) : (
-          <Send className="h-5 w-5" />
-        )}
+        {/* Conditional rendering for spinner inside send button removed for cleaner look, rely on disabled state */}
+        <Send className="h-5 w-5 sm:h-6 sm:w-6" />
       </Button>
     </form>
   );
