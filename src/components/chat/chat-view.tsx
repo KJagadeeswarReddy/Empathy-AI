@@ -10,14 +10,15 @@ import { useAuth } from '@/hooks/use-auth';
 import { LoadingSpinner } from '@/components/ui/loading-spinner';
 import { generateFirstMessage } from '@/ai/flows/generate-first-message'; // Import the GenAI flow
 import { useToast } from '@/hooks/use-toast';
-import { Card, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Bot } from 'lucide-react';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Avatar, AvatarFallback } from '@/components/ui/avatar';
+import { Bot, MessageCircleHeart } from 'lucide-react';
 
 const API_ENDPOINT = '/api/v1/chat/send'; // Placeholder for your backend API
 
 export function ChatView() {
   const [conversationHistory, setConversationHistory] = useState<Message[]>([]);
-  const [isLoading, setIsLoading] = useState(false);
+  const [isLoading, setIsLoading] = useState(false); // This is for ChatView's internal loading (e.g., AI responding)
   const [error, setError] = useState<string | null>(null);
   const { user } = useAuth();
   const scrollAreaRef = useRef<HTMLDivElement>(null);
@@ -36,10 +37,10 @@ export function ChatView() {
   // Generate initial AI message if conversation is empty
   useEffect(() => {
     const initChat = async () => {
+      // user object is guaranteed to be present here because ChatPage handles the !user case
       if (user && conversationHistory.length === 0) {
-        setIsLoading(true);
+        setIsLoading(true); // Indicate ChatView is loading the first message
         try {
-          // Call the GenAI flow for the first message
           const firstMessageInput = { userPrompt: "User has just opened a new chat." };
           const aiWelcomeResponse = await generateFirstMessage(firstMessageInput);
           
@@ -69,7 +70,7 @@ export function ChatView() {
             },
           ]);
         } finally {
-          setIsLoading(false);
+          setIsLoading(false); // Done loading first message
         }
       }
     };
@@ -91,7 +92,7 @@ export function ChatView() {
       timestamp: new Date(),
     };
     setConversationHistory((prev) => [...prev, userMessage]);
-    setIsLoading(true);
+    setIsLoading(true); // AI is now thinking for a response to user's message
     setError(null);
 
     const payload = {
@@ -105,26 +106,7 @@ export function ChatView() {
     };
 
     try {
-      // Simulate API call
-      // const response = await fetch(API_ENDPOINT, {
-      //   method: 'POST',
-      //   headers: { 'Content-Type': 'application/json' },
-      //   body: JSON.stringify(payload),
-      // });
-      // if (!response.ok) {
-      //   throw new Error(`API error: ${response.statusText}`);
-      // }
-      // const data = await response.json();
-      // const aiResponse: Message = {
-      //   id: `ai-${Date.now()}`,
-      //   role: 'assistant',
-      //   content: data.aiResponse.content,
-      //   justification: data.aiResponse.justification,
-      //   timestamp: new Date(),
-      // };
-
-      // Mocked AI Response
-      await new Promise(resolve => setTimeout(resolve, 1500)); // Simulate network delay
+      await new Promise(resolve => setTimeout(resolve, 1500)); 
       const aiResponse: Message = {
         id: `ai-${Date.now()}`,
         role: 'assistant',
@@ -142,7 +124,6 @@ export function ChatView() {
         description: err.message || "Failed to get response from AI.",
         variant: "destructive",
       });
-      // Optionally add an error message to chat
       const errorResponseMessage: Message = {
         id: `error-${Date.now()}`,
         role: 'assistant',
@@ -151,14 +132,13 @@ export function ChatView() {
       };
       setConversationHistory((prev) => [...prev, errorResponseMessage]);
     } finally {
-      setIsLoading(false);
+      setIsLoading(false); // AI done thinking
     }
   };
 
   const handleClearConversation = async () => {
     setConversationHistory([]);
-    // Optionally, call generateFirstMessage again
-    setIsLoading(true);
+    setIsLoading(true); // Preparing new first message
     try {
       const firstMessageInput = { userPrompt: "User has cleared the conversation and started fresh." };
       const aiWelcomeResponse = await generateFirstMessage(firstMessageInput);
@@ -176,7 +156,7 @@ export function ChatView() {
       });
     } catch (err) {
       console.error("Failed to generate first message after clear:", err);
-      setConversationHistory([ // Fallback message
+      setConversationHistory([ 
         {
           id: `ai-fallback-${Date.now()}`,
           role: 'assistant',
@@ -185,23 +165,36 @@ export function ChatView() {
         },
       ]);
     } finally {
-      setIsLoading(false);
+      setIsLoading(false); // Done with new first message
     }
   };
 
-  if (!user) {
+  // The ChatPage component handles the case where !user or auth is initially loading.
+  // So, by the time ChatView renders, 'user' should be available.
+
+  // NEW: Loading state for initial AI message generation
+  if (isLoading && conversationHistory.length === 0) {
     return (
-      <div className="flex flex-1 items-center justify-center">
-        <LoadingSpinner size="lg" />
-        <p className="ml-2">Authenticating...</p>
+      <div className="flex flex-1 flex-col items-center justify-center p-6 bg-muted/30 h-[calc(100vh-4rem)]">
+        <Card className="w-full max-w-md p-6 sm:p-8 text-center shadow-xl rounded-xl">
+          <div className="mx-auto mb-6 flex h-16 w-16 sm:h-20 sm:w-20 items-center justify-center rounded-full bg-primary/10 text-primary animate-pulse">
+            <MessageCircleHeart size={40} strokeWidth={1.5} className="sm:h-10 sm:w-10" />
+          </div>
+          <CardTitle className="text-xl sm:text-2xl font-semibold text-foreground mb-3">Preparing your chat...</CardTitle>
+          <CardDescription className="text-muted-foreground mb-6 text-sm sm:text-base">
+            Empathy.AI is warming up to provide you with the best support. This won't take long!
+          </CardDescription>
+          <LoadingSpinner size="lg" />
+        </Card>
       </div>
     );
   }
 
   return (
-    <div className="flex h-[calc(100vh-4rem)] flex-col bg-muted/30"> {/* Adjust height based on header */}
+    <div className="flex h-[calc(100vh-4rem)] flex-col bg-muted/30">
       <ScrollArea className="flex-1 p-4" ref={scrollAreaRef}>
         <div className="container mx-auto max-w-3xl space-y-4">
+          {/* Fallback welcome card: shows if initChat fails AND history is still empty AND not loading */}
           {conversationHistory.length === 0 && !isLoading && (
              <Card className="mt-8 text-center">
              <CardHeader>
@@ -218,6 +211,7 @@ export function ChatView() {
           {conversationHistory.map((msg) => (
             <ChatMessage key={msg.id} message={msg} />
           ))}
+          {/* Spinner for AI responding to user's subsequent messages */}
           {isLoading && conversationHistory.length > 0 && conversationHistory[conversationHistory.length -1].role === 'user' && (
             <div className="flex items-start space-x-3 py-3 justify-start">
               <Avatar className="h-10 w-10 border bg-accent/20 text-accent">
